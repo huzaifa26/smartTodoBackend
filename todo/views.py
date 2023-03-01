@@ -16,7 +16,6 @@ class TodoListCreateView(generics.ListCreateAPIView):
         user = get_object_or_404(User, id=request.data['user'])
         request.data['user'] = user
         serializer = self.get_serializer(data=request.data)
-        print(serializer)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Todo
-
+from datetime import datetime
 
 class TodoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,7 +14,8 @@ class TodoSerializer(serializers.ModelSerializer):
 
     def validate_title(self, value):
         user = self.context['request'].data['user']
-        today = self.instance.added_date.date() if self.instance else self.context['request'].data.get('added_date', None)
+        # today = self.instance.added_date.date() if self.instance else self.context['request'].data.get('added_date', None)
+        today = datetime.now().date()
         if Todo.objects.filter(title=value, user=user, added_date__date=today).exists():
             raise serializers.ValidationError('You already have a Todo with this title.')
         return value
