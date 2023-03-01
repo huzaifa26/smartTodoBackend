@@ -14,7 +14,7 @@ class signup(generics.CreateAPIView):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # token = Token.objects.create(user=user)
+            token = Token.objects.create(user=user)
             return Response({'token': "token.key"})
         return Response(serializer.errors, status=400)
     
@@ -23,7 +23,9 @@ class login(APIView):
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.validated_data['user']
-            # token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': "token.key"})
+            user,data = serializer.validated_data
+            user=user['user']
+            token,created = Token.objects.get_or_create(user=user)
+            # data.token=token.key
+            return Response({'token': token.key,"data":data})
         return Response(serializer.errors, status=400)

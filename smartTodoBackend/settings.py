@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'users',
+    'todo',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -39,6 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
+    'rest_framework.authtoken'
 ]
 
 MIDDLEWARE = [
@@ -49,7 +52,14 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
+
+CORS_ALLOW_HEADERS = "*"
+CORS_ORIGIN_WHITELIST = [
+    'http://127.0.0.1:5173',
+]
+CORS_ORIGIN_ALLOW_ALL = True 
 
 ROOT_URLCONF = 'smartTodoBackend.urls'
 
@@ -70,7 +80,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'smartTodoBackend.wsgi.application'
-
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases

@@ -27,5 +27,5 @@ class LoginSerializer(serializers.Serializer):
         if not user:
             raise serializers.ValidationError("Invalid login credentials")
         attrs['user'] = user
-        return attrs
-    
+        data={"id":user.id,"username":user.username,"email":user.email}
+        return attrs,data
