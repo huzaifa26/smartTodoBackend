@@ -23,6 +23,7 @@ class TodoSerializer(serializers.ModelSerializer):
     def validate(self, data):
         start_time = data.get('start_time', None)
         end_time = data.get('end_time', None)
+        print(end_time > start_time)
         if start_time and end_time and end_time <= start_time:
             raise serializers.ValidationError('End time must be after start time.')
         return data

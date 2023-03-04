@@ -13,6 +13,7 @@ class TodoListCreateView(generics.ListCreateAPIView):
     # permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+        print(request.data)
         user = get_object_or_404(User, id=request.data['user'])
         request.data['user'] = user
         serializer = self.get_serializer(data=request.data)
@@ -22,7 +23,6 @@ class TodoListCreateView(generics.ListCreateAPIView):
         return Response(serializer.data, status=201, headers=headers)
 
     def perform_create(self, serializer):
-        print(self.request.data["user"])
         serializer.save(user=self.request.data["user"])
 
     def get_queryset(self):
