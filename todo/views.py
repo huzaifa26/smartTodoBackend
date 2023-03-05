@@ -13,7 +13,6 @@ class TodoListCreateView(generics.ListCreateAPIView):
     # permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        print(request.data)
         user = get_object_or_404(User, id=request.data['user'])
         request.data['user'] = user
         serializer = self.get_serializer(data=request.data)
@@ -25,19 +24,6 @@ class TodoListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.data["user"])
 
-    def get_queryset(self):
-        user_id = self.kwargs['user_id']
-        user = get_object_or_404(User, id=user_id)
-        today = datetime.now().date()
-        queryset = Todo.objects.filter(user=user, added_date__date=today)
-        return queryset
-
-    # def get_object(self):
-    #     queryset = self.get_queryset()
-    #     obj = get_object_or_404(queryset, pk=self.kwargs['pk'])
-    #     self.check_object_permissions(self.request, obj)
-    #     return obj
-
 
 class UserTodoListView(generics.ListCreateAPIView):
     serializer_class = TodoSerializer
@@ -48,10 +34,8 @@ class UserTodoListView(generics.ListCreateAPIView):
         user = get_object_or_404(User, id=user_id)
         today = request.data['date']
         queryset = Todo.objects.filter(user=user, added_date__date=today)
-        serializer = self.get_serializer(queryset,many=True)
-        print(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=200)
-    
 
     # def get_queryset(self):
     #     user_id = self.kwargs['user_id']
@@ -59,3 +43,19 @@ class UserTodoListView(generics.ListCreateAPIView):
     #     today = datetime.now().date()
     #     queryset = Todo.objects.filter(user=user, added_date__date=today)
     #     return queryset
+
+
+class TodoListUpdateView(generics.UpdateAPIView):
+    serializer_class = TodoSerializer
+    
+    def update(self, request, *args, **kwargs):
+        print(request.data)
+        user = get_object_or_404(User, id=request.data['user'])
+        request.data['user'] = user
+        todo = get_object_or_404(Todo, id=request.data['id'], user=user)
+        print(user)
+        print(todo)
+        serializer = self.get_serializer(todo, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
