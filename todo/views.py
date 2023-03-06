@@ -33,28 +33,18 @@ class UserTodoListView(generics.ListCreateAPIView):
         user_id = request.data['user']
         user = get_object_or_404(User, id=user_id)
         today = request.data['date']
-        queryset = Todo.objects.filter(user=user, added_date__date=today)
+        queryset = Todo.objects.filter(user=user, start_time__date=today)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=200)
-
-    # def get_queryset(self):
-    #     user_id = self.kwargs['user_id']
-    #     user = get_object_or_404(User, id=user_id)
-    #     today = datetime.now().date()
-    #     queryset = Todo.objects.filter(user=user, added_date__date=today)
-    #     return queryset
 
 
 class TodoListUpdateView(generics.UpdateAPIView):
     serializer_class = TodoSerializer
     
     def update(self, request, *args, **kwargs):
-        print(request.data)
         user = get_object_or_404(User, id=request.data['user'])
         request.data['user'] = user
         todo = get_object_or_404(Todo, id=request.data['id'], user=user)
-        print(user)
-        print(todo)
         serializer = self.get_serializer(todo, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()

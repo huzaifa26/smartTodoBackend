@@ -8,6 +8,8 @@ class Todo(models.Model):
     description = models.TextField()
     category = models.CharField(max_length=100)
     completed = models.BooleanField(default=False)
+    started=models.BooleanField(default=False)
+    auto_complete=models.BooleanField(default=False)
     added_date = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(blank=True, null=True)
     start_time = models.DateTimeField()
