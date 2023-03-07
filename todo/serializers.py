@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Todo
 from datetime import datetime
-
+from django.utils import timezone
 
 class TodoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -18,10 +18,23 @@ class TodoSerializer(serializers.ModelSerializer):
             user = self.context['request'].data['user']
             date=self.context['request'].data['start_time']
             date=date.split()[0]
-            # today = datetime.now().date()
-            print(Todo.objects.filter(title=value, user=user, start_time__date=date).exists())
             if Todo.objects.filter(title=value, user=user, start_time__date=date).exists():
                 raise serializers.ValidationError('You already have a Todo with this title.')
+        return value
+    
+    def validate_start_time(self, value):
+        current_time=self.context['request'].data['last_updated']
+        start_time=self.context['request'].data['start_time']
+        date_format = '%Y-%m-%d %H:%M:%S'
+
+        current_time = datetime.strptime(current_time, date_format)
+        start_time = datetime.strptime(start_time, date_format)
+
+        print(current_time)
+        print(start_time)
+
+        if start_time < current_time:
+            raise serializers.ValidationError('Start time must not be before the current time.')
         return value
 
     def validate(self, data):
