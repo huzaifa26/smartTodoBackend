@@ -1,11 +1,17 @@
+from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
 from rest_framework import generics, permissions, serializers
 from rest_framework.response import Response
 from .models import Todo
 from .serializers import TodoSerializer
-from datetime import datetime
+from datetime import timedelta, datetime
 from django.contrib.auth.models import User
+from django.utils import timezone
+from rest_framework import generics
+from django.db.models import Count
+from datetime import date, timedelta
+import datetime
 
 
 class TodoListCreateView(generics.ListCreateAPIView):
@@ -22,7 +28,8 @@ class TodoListCreateView(generics.ListCreateAPIView):
         return Response(serializer.data, status=201, headers=headers)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.data["user"])
+        serializer.save(
+            user=self.request.data["user"], added_date=self.request.data["added_date"])
 
 
 class UserTodoListView(generics.ListCreateAPIView):
@@ -40,7 +47,7 @@ class UserTodoListView(generics.ListCreateAPIView):
 
 class TodoListUpdateView(generics.UpdateAPIView):
     serializer_class = TodoSerializer
-    
+
     def update(self, request, *args, **kwargs):
         user = get_object_or_404(User, id=request.data['user'])
         request.data['user'] = user
@@ -49,3 +56,99 @@ class TodoListUpdateView(generics.UpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class TaskCountView(generics.GenericAPIView):
+    serializer_class = None
+
+    def get(self, request, *args, **kwargs):
+        user = get_object_or_404(User, id=kwargs.get('user'))
+        target_date = kwargs.get('date')
+        target_date = target_date[0:11]
+
+        # date_30_days_ago = datetime.now() - timedelta(days=30)
+        # month_count = Todo.objects.filter(start_time__gte=date_30_days_ago).count()
+
+        end_date = timezone.now().date()
+        start_date = end_date - timezone.timedelta(days=30)
+
+        queryset = Todo.objects.filter(
+            start_time__range=(start_date, end_date))
+        queryset = queryset.annotate(day=TruncDate('start_time'))
+        queryset = queryset.values('day').annotate(
+            total=Count('id')).order_by('-day')
+
+        task_count = Todo.objects.filter(
+            user=user, start_time__date=target_date).count()
+        completed_count = Todo.objects.filter(
+            user=user, start_time__date=target_date, completed=True).count()
+        started_count = Todo.objects.filter(
+            user=user, start_time__date=target_date, completed=False, started=True).count()
+
+        return Response({'task_count': task_count, 'completed_count': completed_count, "started_count": started_count, "month_count": queryset})
+
+
+class TodoTimeline(generics.GenericAPIView):
+    # def get(self, request, format=None):
+    #     today = date.today()
+    #     end_date = today + timedelta(days=6)
+    #     todos = Todo.objects.filter(
+    #         start_time__date__gte=today, start_time__date__lte=end_date)
+
+    #     timeline = [[] for _ in range(7)]
+    #     labels = []
+
+    #     day_names = ['Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
+
+    #     for i in range(7):
+    #         dateForLabel = today + datetime.timedelta(days=i)
+    #         day_name = day_names[dateForLabel.weekday()]
+    #         labels.append(day_name)
+
+    #     data = []
+
+    #     for indexoFTodo,todo in enumerate(todos):
+    #         index = (todo.start_time.date() - today).days
+    #         timeline[index].append([todo.start_time.hour + todo.start_time.minute/100 + todo.start_time.second/100,todo.end_time.hour + todo.end_time.minute/100 + todo.end_time.second/100])
+    #         diction ={
+    #                 "label": labels[index],
+    #                 "data": timeline[index],
+    #                 "borderColor": '#AF91E9',
+    #                 "backgroundColor": '#AF91E9'
+    #                 }
+    #         data.append(diction)
+
+    #     return Response({"timeline": data, "labels": labels})
+    def get(self, request, format=None):
+        today = date.today()
+        end_date = today + timedelta(days=6)
+        todos = Todo.objects.filter(start_time__date__gte=today, start_time__date__lte=end_date)
+        timeline = [[[] for _ in range(7)] for _ in range(10)]  # 10 tasks per day
+        labels = []
+
+        day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        for i in range(7):
+            date_for_label = today + timedelta(days=i)
+            day_name = day_names[date_for_label.weekday()]
+            labels.append(day_name)
+
+        for todo in todos:
+            index = (todo.start_time.date() - today).days
+            task_index = 0  # first task
+            while task_index < 10:  # assume maximum 10 tasks per day
+                if not timeline[task_index][index]:
+                    timeline[task_index][index] = [day_names[index],todo.start_time.timestamp(), todo.end_time.timestamp()]
+                    break
+                task_index += 1
+
+        data = []
+        for i in range(10):  # assume maximum 10 tasks per day
+            diction = {
+                "label": f"Task {i+1}",
+                "data": timeline[i],
+                "borderColor": '#AF91E9',
+                "backgroundColor": '#AF91E9'
+            }
+            data.append(diction)
+
+        return Response({"timeline": data, "labels": labels})

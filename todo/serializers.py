@@ -22,19 +22,34 @@ class TodoSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('You already have a Todo with this title.')
         return value
     
-    def validate_start_time(self, value):
-        current_time=self.context['request'].data['last_updated']
-        start_time=self.context['request'].data['start_time']
-        date_format = '%Y-%m-%d %H:%M:%S'
+    # def validate_start_time(self, value):
+        print(self.instance)
+        if self.instance and self.context['request'].data['last_updated'] is not None: # For new tasks
+            current_time=self.context['request'].data['last_updated']
+            start_time=self.context['request'].data['start_time']
+            date_format = '%Y-%m-%d %H:%M:%S'
 
-        current_time = datetime.strptime(current_time, date_format)
-        start_time = datetime.strptime(start_time, date_format)
+            current_time = datetime.strptime(current_time, date_format)
+            start_time = datetime.strptime(start_time, date_format)
 
-        print(current_time)
-        print(start_time)
+            if start_time < current_time:
+                raise serializers.ValidationError('Start time must not be before the current time.')
+            
+        if self.instance is None: # For updated tasks
+            print(self.context['request'].data)
+            current_time=self.context['request'].data['added_date']
+            start_time=self.context['request'].data['start_time']
+            date_format = '%Y-%m-%d %H:%M:%S'
 
-        if start_time < current_time:
-            raise serializers.ValidationError('Start time must not be before the current time.')
+            current_time = datetime.strptime(current_time, date_format)
+            start_time = datetime.strptime(start_time, date_format)
+
+            print(current_time)
+            print(start_time)
+
+            if start_time < current_time:
+                raise serializers.ValidationError('Start time must not be before the current time.')
+
         return value
 
     def validate(self, data):
