@@ -2,13 +2,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 class Todo(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     category = models.CharField(max_length=100)
     completed = models.BooleanField(default=False)
     started=models.BooleanField(default=False)
+    isMissed=models.BooleanField(default=False)
     auto_complete=models.BooleanField(default=False)
     added_date = models.DateTimeField()
     last_updated = models.DateTimeField(blank=True, null=True)

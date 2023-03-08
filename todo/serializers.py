@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Todo
 from datetime import datetime
 from django.utils import timezone
+from django.db.models import Q
 
 class TodoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,8 +23,7 @@ class TodoSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('You already have a Todo with this title.')
         return value
     
-    # def validate_start_time(self, value):
-        print(self.instance)
+    def validate_start_time(self, value):
         if self.instance and self.context['request'].data['last_updated'] is not None: # For new tasks
             current_time=self.context['request'].data['last_updated']
             start_time=self.context['request'].data['start_time']
@@ -36,7 +36,6 @@ class TodoSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('Start time must not be before the current time.')
             
         if self.instance is None: # For updated tasks
-            print(self.context['request'].data)
             current_time=self.context['request'].data['added_date']
             start_time=self.context['request'].data['start_time']
             date_format = '%Y-%m-%d %H:%M:%S'
@@ -44,12 +43,8 @@ class TodoSerializer(serializers.ModelSerializer):
             current_time = datetime.strptime(current_time, date_format)
             start_time = datetime.strptime(start_time, date_format)
 
-            print(current_time)
-            print(start_time)
-
             if start_time < current_time:
                 raise serializers.ValidationError('Start time must not be before the current time.')
-
         return value
 
     def validate(self, data):
@@ -57,4 +52,12 @@ class TodoSerializer(serializers.ModelSerializer):
         end_time = data.get('end_time', None)
         if start_time and end_time and end_time <= start_time:
             raise serializers.ValidationError('End time must be after start time.')
+        if self.instance is None: # For updated tasks
+            user = user = self.context['request'].data['user']
+
+            if start_time and end_time and user:
+                overlapping_todos = Todo.objects.filter(Q(start_time__lt=end_time, end_time__gt=start_time) | Q(start_time__exact=start_time, end_time__exact=end_time),user=user,).exclude(pk=self.instance.pk if self.instance else None)
+
+                if overlapping_todos.exists():
+                    raise serializers.ValidationError('Another Todo with overlapping time already exists.')
         return data

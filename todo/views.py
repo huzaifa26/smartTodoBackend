@@ -89,40 +89,10 @@ class TaskCountView(generics.GenericAPIView):
 
 
 class TodoTimeline(generics.GenericAPIView):
-    # def get(self, request, format=None):
-    #     today = date.today()
-    #     end_date = today + timedelta(days=6)
-    #     todos = Todo.objects.filter(
-    #         start_time__date__gte=today, start_time__date__lte=end_date)
-
-    #     timeline = [[] for _ in range(7)]
-    #     labels = []
-
-    #     day_names = ['Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat', 'Sun']
-
-    #     for i in range(7):
-    #         dateForLabel = today + datetime.timedelta(days=i)
-    #         day_name = day_names[dateForLabel.weekday()]
-    #         labels.append(day_name)
-
-    #     data = []
-
-    #     for indexoFTodo,todo in enumerate(todos):
-    #         index = (todo.start_time.date() - today).days
-    #         timeline[index].append([todo.start_time.hour + todo.start_time.minute/100 + todo.start_time.second/100,todo.end_time.hour + todo.end_time.minute/100 + todo.end_time.second/100])
-    #         diction ={
-    #                 "label": labels[index],
-    #                 "data": timeline[index],
-    #                 "borderColor": '#AF91E9',
-    #                 "backgroundColor": '#AF91E9'
-    #                 }
-    #         data.append(diction)
-
-    #     return Response({"timeline": data, "labels": labels})
     def get(self, request, format=None):
         today = date.today()
         end_date = today + timedelta(days=6)
-        todos = Todo.objects.filter(start_time__date__gte=today, start_time__date__lte=end_date)
+        todos = Todo.objects.filter(start_time__date__gte=today, start_time__date__lte=end_date).order_by('start_time')
         timeline = [[[] for _ in range(7)] for _ in range(10)]  # 10 tasks per day
         labels = []
 
@@ -137,17 +107,23 @@ class TodoTimeline(generics.GenericAPIView):
             task_index = 0  # first task
             while task_index < 10:  # assume maximum 10 tasks per day
                 if not timeline[task_index][index]:
-                    timeline[task_index][index] = [day_names[index],todo.start_time.timestamp(), todo.end_time.timestamp()]
+                    timeline[task_index][index] = [todo.start_time.hour + todo.start_time.minute/100, todo.end_time.hour + todo.end_time.minute/100]
                     break
                 task_index += 1
 
         data = []
+        colors = ['#AF91E9', '#0E123F']  # list of colors to alternate between
+
         for i in range(10):  # assume maximum 10 tasks per day
+            color_index = i % 2  # alternate between the two colors
             diction = {
                 "label": f"Task {i+1}",
                 "data": timeline[i],
-                "borderColor": '#AF91E9',
-                "backgroundColor": '#AF91E9'
+                "borderColor": colors[color_index],
+                "backgroundColor": colors[color_index],
+                # "barPercentage": 1.0,
+                # "categoryPercentage": 1
+
             }
             data.append(diction)
 
