@@ -66,34 +66,27 @@ class TaskCountView(generics.GenericAPIView):
         target_date = kwargs.get('date')
         target_date = target_date[0:11]
 
-        # date_30_days_ago = datetime.now() - timedelta(days=30)
-        # month_count = Todo.objects.filter(start_time__gte=date_30_days_ago).count()
-
         end_date = timezone.now().date()
         start_date = end_date - timezone.timedelta(days=30)
 
-        queryset = Todo.objects.filter(
-            start_time__range=(start_date, end_date))
+        queryset = Todo.objects.filter(user=user,start_time__range=(start_date, end_date))
         queryset = queryset.annotate(day=TruncDate('start_time'))
-        queryset = queryset.values('day').annotate(
-            total=Count('id')).order_by('-day')
+        queryset = queryset.values('day').annotate(total=Count('id')).order_by('-day')
 
-        task_count = Todo.objects.filter(
-            user=user, start_time__date=target_date).count()
-        completed_count = Todo.objects.filter(
-            user=user, start_time__date=target_date, completed=True).count()
-        started_count = Todo.objects.filter(
-            user=user, start_time__date=target_date, completed=False, started=True).count()
+        task_count = Todo.objects.filter(user=user, start_time__date=target_date).count()
+        completed_count = Todo.objects.filter(user=user, start_time__date=target_date, completed=True).count()
+        started_count = Todo.objects.filter(user=user, start_time__date=target_date, completed=False, started=True).count()
 
         return Response({'task_count': task_count, 'completed_count': completed_count, "started_count": started_count, "month_count": queryset})
 
 
 class TodoTimeline(generics.GenericAPIView):
-    def get(self, request, format=None):
+    def get(self, request,*args, **kwargs):
+        user = get_object_or_404(User, id=kwargs.get('user'))
         today = date.today()
         end_date = today + timedelta(days=6)
-        todos = Todo.objects.filter(start_time__date__gte=today, start_time__date__lte=end_date).order_by('start_time')
-        timeline = [[[] for _ in range(7)] for _ in range(10)]  # 10 tasks per day
+        todos = Todo.objects.filter(user=user,start_time__date__gte=today, start_time__date__lte=end_date).order_by('start_time')
+        timeline = [[[] for _ in range(7)] for _ in range(10)] 
         labels = []
 
         day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -104,26 +97,23 @@ class TodoTimeline(generics.GenericAPIView):
 
         for todo in todos:
             index = (todo.start_time.date() - today).days
-            task_index = 0  # first task
-            while task_index < 10:  # assume maximum 10 tasks per day
+            task_index = 0 
+            while task_index < 10:
                 if not timeline[task_index][index]:
                     timeline[task_index][index] = [todo.start_time.hour + todo.start_time.minute/100, todo.end_time.hour + todo.end_time.minute/100]
                     break
                 task_index += 1
 
         data = []
-        colors = ['#AF91E9', '#0E123F']  # list of colors to alternate between
+        colors = ['#AF91E9', '#0E123F']
 
-        for i in range(10):  # assume maximum 10 tasks per day
-            color_index = i % 2  # alternate between the two colors
+        for i in range(10): 
+            color_index = i % 2
             diction = {
                 "label": f"Task {i+1}",
                 "data": timeline[i],
                 "borderColor": colors[color_index],
                 "backgroundColor": colors[color_index],
-                # "barPercentage": 1.0,
-                # "categoryPercentage": 1
-
             }
             data.append(diction)
 
