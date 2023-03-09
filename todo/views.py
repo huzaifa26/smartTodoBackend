@@ -11,7 +11,8 @@ from django.utils import timezone
 from rest_framework import generics
 from django.db.models import Count
 from datetime import date, timedelta
-import datetime
+from django.db.models import Count, Case, When, IntegerField
+
 
 
 class TodoListCreateView(generics.ListCreateAPIView):
@@ -40,7 +41,7 @@ class UserTodoListView(generics.ListCreateAPIView):
         user_id = request.data['user']
         user = get_object_or_404(User, id=user_id)
         today = request.data['date']
-        queryset = Todo.objects.filter(user=user, start_time__date=today)
+        queryset = Todo.objects.filter(user=user, start_time__date=today).order_by('start_time')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=200)
 
@@ -71,7 +72,10 @@ class TaskCountView(generics.GenericAPIView):
 
         queryset = Todo.objects.filter(user=user,start_time__range=(start_date, end_date))
         queryset = queryset.annotate(day=TruncDate('start_time'))
-        queryset = queryset.values('day').annotate(total=Count('id')).order_by('-day')
+        queryset = queryset.values('day').annotate(total=Count('id'),completed=Count(Case(When(completed=True, then=1), output_field=IntegerField()))).order_by('-day')
+
+        for todo in queryset:
+            print(todo)
 
         task_count = Todo.objects.filter(user=user, start_time__date=target_date).count()
         completed_count = Todo.objects.filter(user=user, start_time__date=target_date, completed=True).count()
@@ -93,7 +97,8 @@ class TodoTimeline(generics.GenericAPIView):
         for i in range(7):
             date_for_label = today + timedelta(days=i)
             day_name = day_names[date_for_label.weekday()]
-            labels.append(day_name)
+            
+            labels.append(date_for_label)
 
         for todo in todos:
             index = (todo.start_time.date() - today).days
@@ -118,3 +123,15 @@ class TodoTimeline(generics.GenericAPIView):
             data.append(diction)
 
         return Response({"timeline": data, "labels": labels})
+    
+
+class TodoListDeleteView(generics.GenericAPIView):
+    serializer_class = TodoSerializer
+    # permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        user = get_object_or_404(User, id=kwargs.get('user'))
+        todo = get_object_or_404(Todo, user_id=user, id=kwargs.get("id"))
+        print(user,kwargs.get("id"))
+        todo.delete()
+        return Response(status=204)

@@ -4,8 +4,9 @@ from django.contrib.auth.models import User
 
 class Todo(models.Model):
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     category = models.CharField(max_length=100)
+    activity_type = models.TextField(blank=True, null=True)
     completed = models.BooleanField(default=False)
     started=models.BooleanField(default=False)
     isMissed=models.BooleanField(default=False)
