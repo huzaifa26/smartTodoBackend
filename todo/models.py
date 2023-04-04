@@ -14,8 +14,8 @@ class Todo(models.Model):
     auto_complete=models.BooleanField(default=False)
     added_date = models.DateTimeField()
     last_updated = models.DateTimeField(blank=True, null=True)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    start_time = models.DateTimeField(blank=True, null=True)
+    end_time = models.DateTimeField(blank=True, null=True)
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
 
     def __str__(self):

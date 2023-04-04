@@ -14,11 +14,8 @@ from django.db.models import Count
 from datetime import date, timedelta
 from django.db.models import Count, Case, When, IntegerField
 
-
-
 class TodoListCreateView(generics.ListCreateAPIView):
     serializer_class = TodoSerializer
-    # permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         user = get_object_or_404(get_user_model(), id=request.data['user'])
@@ -36,13 +33,12 @@ class TodoListCreateView(generics.ListCreateAPIView):
 
 class UserTodoListView(generics.ListCreateAPIView):
     serializer_class = TodoSerializer
-    # permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         user_id = request.data['user']
         user = get_object_or_404(get_user_model(), id=user_id)
         today = request.data['date']
-        queryset = Todo.objects.filter(user=user, start_time__date=today).order_by('start_time')
+        queryset = Todo.objects.filter(user=user, added_date__date=today).order_by('added_date')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=200)
 
