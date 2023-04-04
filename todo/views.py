@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from .models import Todo
 from .serializers import TodoSerializer
 from datetime import timedelta, datetime
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
 from django.utils import timezone
 from rest_framework import generics
 from django.db.models import Count
@@ -20,7 +21,7 @@ class TodoListCreateView(generics.ListCreateAPIView):
     # permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        user = get_object_or_404(User, id=request.data['user'])
+        user = get_object_or_404(get_user_model(), id=request.data['user'])
         request.data['user'] = user
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -39,7 +40,7 @@ class UserTodoListView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         user_id = request.data['user']
-        user = get_object_or_404(User, id=user_id)
+        user = get_object_or_404(get_user_model(), id=user_id)
         today = request.data['date']
         queryset = Todo.objects.filter(user=user, start_time__date=today).order_by('start_time')
         serializer = self.get_serializer(queryset, many=True)
@@ -50,7 +51,7 @@ class TodoListUpdateView(generics.UpdateAPIView):
     serializer_class = TodoSerializer
 
     def update(self, request, *args, **kwargs):
-        user = get_object_or_404(User, id=request.data['user'])
+        user = get_object_or_404(get_user_model(), id=request.data['user'])
         request.data['user'] = user
         todo = get_object_or_404(Todo, id=request.data['id'], user=user)
         serializer = self.get_serializer(todo, data=request.data, partial=True)
@@ -63,7 +64,7 @@ class TaskCountView(generics.GenericAPIView):
     serializer_class = None
 
     def get(self, request, *args, **kwargs):
-        user = get_object_or_404(User, id=kwargs.get('user'))
+        user = get_object_or_404(get_user_model(), id=kwargs.get('user'))
         target_date = kwargs.get('date')
         target_date = target_date[0:11]
 
@@ -86,7 +87,7 @@ class TaskCountView(generics.GenericAPIView):
 
 class TodoTimeline(generics.GenericAPIView):
     def get(self, request,*args, **kwargs):
-        user = get_object_or_404(User, id=kwargs.get('user'))
+        user = get_object_or_404(get_user_model(), id=kwargs.get('user'))
         today = date.today()
         end_date = today + timedelta(days=6)
         todos = Todo.objects.filter(user=user,start_time__date__gte=today, start_time__date__lte=end_date).order_by('start_time')
@@ -130,7 +131,7 @@ class TodoListDeleteView(generics.GenericAPIView):
     # permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, *args, **kwargs):
-        user = get_object_or_404(User, id=kwargs.get('user'))
+        user = get_object_or_404(get_user_model(), id=kwargs.get('user'))
         todo = get_object_or_404(Todo, user_id=user, id=kwargs.get("id"))
         print(user,kwargs.get("id"))
         todo.delete()
