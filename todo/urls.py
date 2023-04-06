@@ -5,6 +5,7 @@ from .views import TodoListUpdateView
 from .views import TaskCountView
 from .views import TodoTimeline
 from .views import TodoListDeleteView
+from .views import TodayTotalTimeView
 
 urlpatterns = [
     path('add/', TodoListCreateView.as_view(), name='add-todo-list'),
@@ -13,4 +14,5 @@ urlpatterns = [
     path('count/<int:user>/<str:date>/', TaskCountView.as_view(), name='task_count'),
     path('timeline/<int:user>', TodoTimeline.as_view(), name='time_line_data'),
     path('delete/<int:user>/<int:id>', TodoListDeleteView.as_view(), name='delete_todo'),
+    path('getTotalTime/<int:userId>', TodayTotalTimeView.as_view(), name='get_Time'),
 ]
