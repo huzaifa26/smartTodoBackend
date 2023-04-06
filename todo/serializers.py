@@ -26,7 +26,7 @@ class TodoSerializer(serializers.ModelSerializer):
         return value
     
     def validate_start_time(self, value):
-        if self.instance and self.context['request'].data['last_updated'] is not None: # For new tasks
+        if self.instance and self.context['request'].data['last_updated'] is not None:  # For updated tasks
             current_time=self.context['request'].data['last_updated']
             start_time=self.context['request'].data['start_time']
             date_format = '%Y-%m-%d %H:%M:%S'
@@ -34,19 +34,26 @@ class TodoSerializer(serializers.ModelSerializer):
             if start_time is not None:
                 current_time = datetime.strptime(current_time, date_format)
                 start_time = datetime.strptime(start_time, date_format)
-                if start_time < current_time:
+                if start_time < current_time and self.context['request'].data['isStartTimeChange'] == False:
                     raise serializers.ValidationError('Start time must not be before the current time.')
             
-        if self.instance is None: # For updated tasks
+        if self.instance is None:  # For new tasks
             current_time=self.context['request'].data['added_date']
             start_time=self.context['request'].data['start_time']
+            end_time=self.context['request'].data['end_time']
             if start_time is not None:
                 date_format = '%Y-%m-%d %H:%M:%S'
                 current_time = datetime.strptime(current_time, date_format)
                 start_time = datetime.strptime(start_time, date_format)
-
                 if start_time < current_time:
                     raise serializers.ValidationError('Start time must not be before the current time.')
+                
+            if start_time is None and end_time is not None:
+                date_format = '%Y-%m-%d %H:%M:%S'
+                current_time = datetime.strptime(current_time, date_format)
+                end_time = datetime.strptime(end_time, date_format)
+                if end_time < current_time:
+                    raise serializers.ValidationError('End time must not be before the current time.')
         return value
 
     def validate(self, data):
