@@ -15,6 +15,10 @@ from django.db.models import Count, Case, When, IntegerField
 from django.db.models import Sum
 from django.utils import timezone
 
+import requests
+from bs4 import BeautifulSoup
+import json
+import re
 
 
 class TodoListCreateView(generics.ListCreateAPIView):
@@ -96,7 +100,8 @@ class TodoTimeline(generics.GenericAPIView):
         user = get_object_or_404(get_user_model(), id=kwargs.get('user'))
         today = date.today()
         end_date = today + timedelta(days=6)
-        todos = Todo.objects.filter(user=user, start_time__date__gte=today, start_time__date__lte=end_date).order_by('start_time')
+        todos = Todo.objects.filter(
+            user=user, start_time__date__gte=today, start_time__date__lte=end_date).order_by('start_time')
         timeline = [[[] for _ in range(7)] for _ in range(10)]
         labels = []
 
@@ -112,7 +117,8 @@ class TodoTimeline(generics.GenericAPIView):
             task_index = 0
             while task_index < 10:
                 if not timeline[task_index][index]:
-                    timeline[task_index][index] = [todo.start_time.hour + todo.start_time.minute/100, todo.end_time.hour + todo.end_time.minute/100]
+                    timeline[task_index][index] = [todo.start_time.hour +
+                                                   todo.start_time.minute/100, todo.end_time.hour + todo.end_time.minute/100]
                     break
                 task_index += 1
 
@@ -142,19 +148,79 @@ class TodoListDeleteView(generics.GenericAPIView):
         print(user, kwargs.get("id"))
         todo.delete()
         return Response(status=204)
-    
+
 
 class TodayTotalTimeView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         print(kwargs.get("userId"))
         # Get the current date and time in the server's timezone
         today = timezone.now().date()
-        
+
         # Filter the Todo objects that have a start_time set to today's date
         todos = Todo.objects.filter(added_date__date=today)
-        
+
         # Calculate the total time for the filtered todos
         total_time = todos.aggregate(Sum('totalTime'))['totalTime__sum'] or 0
-        
+
         # Return the total time as a JSON response
         return Response({'today_total_time': total_time})
+
+
+class Get_weather_data(generics.GenericAPIView):
+    def get(self, request, *args, **kwargs):
+        location=kwargs.get("location")
+        print()
+
+        header = {
+            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
+            "Language": "en-US,en;q=0.5",
+        }
+        url = 'https://www.google.com/search?q=weather+'+location
+        session = requests.Session()
+        session.headers["User-Agent"] = header["User-Agent"]
+        session.headers["Accept-Language"] = header["Language"]
+        session.headers["Content-Language"] = header["Language"]
+
+        html = session.get(url)
+        base = BeautifulSoup(html.text, "html.parser")
+        data_in = re.search(r"pmc='({.*?})'", html.text).group(1)
+        data_in = json.loads(data_in.replace(r"\x22", '"').replace(r'\\"', r"\""))
+
+        data_out = list()
+        output_units = {"temp": "f", "speed": "km/h"}
+        i = 0
+        for entry_in in data_in["wobnm"]["wobhl"]:
+            if i > 4:
+                break
+            i = i+1
+
+            entry_out = dict()
+
+            entry_out["datetime"] = entry_in["dts"]
+            entry_out["weather"] = entry_in["c"]
+            entry_out["icon"] = entry_in["iu"]
+            entry_out["humidity"] = float(entry_in["h"].replace("%", ""))
+            entry_out["precip_prob"] = float(entry_in["p"].replace("%", ""))
+
+            if output_units["temp"] == "c":
+                entry_out["temp"] = float(entry_in["tm"])
+                entry_out["unit"] = "C"
+            else:
+                entry_out["temp"] = float(entry_in["ttm"])
+                entry_out["unit"] = "F"
+
+            if output_units["speed"] == "km/h":
+                entry_out["wind_speed"] = float(
+                    entry_in["ws"].replace("km/h", ""))
+            else:
+                entry_out["wind_speed"] = float(
+                    entry_in["tws"].replace("mph", ""))
+                
+            icon_element = base.find('img', {'class': 'wob_tci'})
+            if icon_element is not None:
+                icon_url = icon_element['src']
+                entry_out["icon_url"] = icon_url
+
+            data_out.append(entry_out)
+
+        return Response({"weather":data_out})

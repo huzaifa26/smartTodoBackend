@@ -56,17 +56,17 @@ class TodoSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError('End time must not be before the current time.')
         return value
 
-    def validate(self, data):
-        start_time = data.get('start_time', None)
-        end_time = data.get('end_time', None)
-        if start_time and end_time and end_time <= start_time:
-            raise serializers.ValidationError('End time must be after start time.')
-        if self.instance is None: # For updated tasks
-            user = user = self.context['request'].data['user']
+    # def validate(self, data):
+    #     start_time = data.get('start_time', None)
+    #     end_time = data.get('end_time', None)
+    #     if start_time and end_time and end_time <= start_time:
+    #         raise serializers.ValidationError('End time must be after start time.')
+    #     if self.instance is None: # For updated tasks
+    #         user = user = self.context['request'].data['user']
 
-            if start_time and end_time and user:
-                overlapping_todos = Todo.objects.filter(Q(start_time__lt=end_time, end_time__gt=start_time) | Q(start_time__exact=start_time, end_time__exact=end_time),user=user,).exclude(pk=self.instance.pk if self.instance else None)
+    #         if start_time and end_time and user:
+    #             overlapping_todos = Todo.objects.filter(Q(start_time__lt=end_time, end_time__gt=start_time) | Q(start_time__exact=start_time, end_time__exact=end_time),user=user,).exclude(pk=self.instance.pk if self.instance else None)
 
-                if overlapping_todos.exists():
-                    raise serializers.ValidationError('Another Todo with overlapping time already exists.')
-        return data
+    #             if overlapping_todos.exists():
+    #                 raise serializers.ValidationError('Another Todo with overlapping time already exists.')
+    #     return data
