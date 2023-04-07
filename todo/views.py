@@ -101,7 +101,7 @@ class TodoTimeline(generics.GenericAPIView):
         today = date.today()
         end_date = today + timedelta(days=6)
         todos = Todo.objects.filter(
-            user=user, start_time__date__gte=today, start_time__date__lte=end_date).order_by('start_time')
+            user=user, start_time__date__gte=today, start_time__date__lte=end_date, start_time__isnull=False, end_time__isnull=False).order_by('start_time')
         timeline = [[[] for _ in range(7)] for _ in range(10)]
         labels = []
 
@@ -152,25 +152,25 @@ class TodoListDeleteView(generics.GenericAPIView):
 
 class TodayTotalTimeView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
-        print(kwargs.get("userId"))
+        time = kwargs.get("time")
+        time = datetime.strptime(time, '%a %b %d %Y %H:%M:%S GMT%z (%Z)')
+        time = time.date()
         # Get the current date and time in the server's timezone
-        today = timezone.now().date()
-
+        # today = timezone.now().date()
         # Filter the Todo objects that have a start_time set to today's date
-        todos = Todo.objects.filter(added_date__date=today)
+        todos = Todo.objects.filter(added_date__date=time)
 
         # Calculate the total time for the filtered todos
         total_time = todos.aggregate(Sum('totalTime'))['totalTime__sum'] or 0
 
         # Return the total time as a JSON response
+        print(todos)
         return Response({'today_total_time': total_time})
 
 
 class Get_weather_data(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
-        location=kwargs.get("location")
-        print()
-
+        location = kwargs.get("location")
         header = {
             "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0",
             "Language": "en-US,en;q=0.5",
@@ -184,7 +184,8 @@ class Get_weather_data(generics.GenericAPIView):
         html = session.get(url)
         base = BeautifulSoup(html.text, "html.parser")
         data_in = re.search(r"pmc='({.*?})'", html.text).group(1)
-        data_in = json.loads(data_in.replace(r"\x22", '"').replace(r'\\"', r"\""))
+        data_in = json.loads(data_in.replace(
+            r"\x22", '"').replace(r'\\"', r"\""))
 
         data_out = list()
         output_units = {"temp": "f", "speed": "km/h"}
@@ -201,6 +202,7 @@ class Get_weather_data(generics.GenericAPIView):
             entry_out["icon"] = entry_in["iu"]
             entry_out["humidity"] = float(entry_in["h"].replace("%", ""))
             entry_out["precip_prob"] = float(entry_in["p"].replace("%", ""))
+            # entry_out["precip_prob"] = 55
 
             if output_units["temp"] == "c":
                 entry_out["temp"] = float(entry_in["tm"])
@@ -215,7 +217,7 @@ class Get_weather_data(generics.GenericAPIView):
             else:
                 entry_out["wind_speed"] = float(
                     entry_in["tws"].replace("mph", ""))
-                
+
             icon_element = base.find('img', {'class': 'wob_tci'})
             if icon_element is not None:
                 icon_url = icon_element['src']
@@ -223,4 +225,4 @@ class Get_weather_data(generics.GenericAPIView):
 
             data_out.append(entry_out)
 
-        return Response({"weather":data_out})
+        return Response({"weather": data_out})

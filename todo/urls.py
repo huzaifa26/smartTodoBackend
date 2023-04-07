@@ -15,6 +15,6 @@ urlpatterns = [
     path('count/<int:user>/<str:date>/', TaskCountView.as_view(), name='task_count'),
     path('timeline/<int:user>', TodoTimeline.as_view(), name='time_line_data'),
     path('delete/<int:user>/<int:id>', TodoListDeleteView.as_view(), name='delete_todo'),
-    path('getTotalTime/<int:userId>', TodayTotalTimeView.as_view(), name='get_Time'),
+    path('getTotalTime/<int:userId>/<str:time>', TodayTotalTimeView.as_view(), name='get_Time'),
     path('weather/<str:location>', Get_weather_data.as_view(), name='get_Weather'),
 ]
