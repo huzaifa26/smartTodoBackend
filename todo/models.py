@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 class Todo(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
-    category = models.CharField(max_length=100)
+    category = models.CharField(max_length=100,blank=True, null=True)
     activity_type = models.TextField(blank=True, null=True)
     completed = models.BooleanField(default=False)
     started=models.BooleanField(default=False)

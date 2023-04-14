@@ -18,11 +18,10 @@ class TodoSerializer(serializers.ModelSerializer):
         if self.instance is None:  # create request
             user = self.context['request'].data['user']
             date=self.context['request'].data['start_time']
-            print(date)
             if date is not None:
                 date=date.split()[0]
-            if Todo.objects.filter(title=value, user=user, start_time__date=date).exists():
-                raise serializers.ValidationError('You already have a Todo with this title.')
+            # if Todo.objects.filter(title=value, user=user, start_time__date=date).exists():
+                # raise serializers.ValidationError('You already have a Todo with this title.')
         return value
     
     def validate_start_time(self, value):

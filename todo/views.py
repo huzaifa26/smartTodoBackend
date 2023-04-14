@@ -201,8 +201,8 @@ class Get_weather_data(generics.GenericAPIView):
             entry_out["weather"] = entry_in["c"]
             entry_out["icon"] = entry_in["iu"]
             entry_out["humidity"] = float(entry_in["h"].replace("%", ""))
-            entry_out["precip_prob"] = float(entry_in["p"].replace("%", ""))
-            # entry_out["precip_prob"] = 55
+            # entry_out["precip_prob"] = float(entry_in["p"].replace("%", ""))
+            entry_out["precip_prob"] = 55
 
             if output_units["temp"] == "c":
                 entry_out["temp"] = float(entry_in["tm"])
