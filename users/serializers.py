@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ('id', 'username', 'email', 'password')
+        fields = ('id', 'username', 'email', 'password','first_name','last_name')
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -29,5 +29,5 @@ class LoginSerializer(serializers.Serializer):
         if not user:
             raise serializers.ValidationError("Invalid login credentials")
         attrs['user'] = user
-        data={"id":user.id,"username":user.username,"email":user.email}
+        data={"id":user.id,"username":user.username,"email":user.email,'first_name':user.first_name,'last_name':user.last_name,}
         return attrs,data

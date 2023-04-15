@@ -86,11 +86,11 @@ class TaskCountView(generics.GenericAPIView):
             print(todo)
 
         task_count = Todo.objects.filter(
-            user=user, start_time__date=target_date).count()
+            user=user, added_date__date=target_date, started=False).count()
         completed_count = Todo.objects.filter(
-            user=user, start_time__date=target_date, completed=True).count()
+            user=user, added_date__date=target_date, completed=True).count()
         started_count = Todo.objects.filter(
-            user=user, start_time__date=target_date, completed=False, started=True).count()
+            user=user, added_date__date=target_date, completed=False, started=True).count()
 
         return Response({'task_count': task_count, 'completed_count': completed_count, "started_count": started_count, "month_count": queryset})
 
@@ -186,43 +186,27 @@ class Get_weather_data(generics.GenericAPIView):
         data_in = re.search(r"pmc='({.*?})'", html.text).group(1)
         data_in = json.loads(data_in.replace(
             r"\x22", '"').replace(r'\\"', r"\""))
-
         data_out = list()
-        output_units = {"temp": "f", "speed": "km/h"}
-        i = 0
-        for entry_in in data_in["wobnm"]["wobhl"]:
-            if i > 4:
-                break
-            i = i+1
+        output_units = {"temp": "F", "speed": "mph"}
 
-            entry_out = dict()
-
-            entry_out["datetime"] = entry_in["dts"]
-            entry_out["weather"] = entry_in["c"]
-            entry_out["icon"] = entry_in["iu"]
-            entry_out["humidity"] = float(entry_in["h"].replace("%", ""))
-            # entry_out["precip_prob"] = float(entry_in["p"].replace("%", ""))
-            entry_out["precip_prob"] = 55
-
-            if output_units["temp"] == "c":
-                entry_out["temp"] = float(entry_in["tm"])
-                entry_out["unit"] = "C"
-            else:
-                entry_out["temp"] = float(entry_in["ttm"])
-                entry_out["unit"] = "F"
-
-            if output_units["speed"] == "km/h":
-                entry_out["wind_speed"] = float(
-                    entry_in["ws"].replace("km/h", ""))
-            else:
-                entry_out["wind_speed"] = float(
-                    entry_in["tws"].replace("mph", ""))
-
+        for entry_in in data_in["wobnm"]["wobhl"][:5]:
+            entry_out = {
+                "datetime": entry_in["dts"],
+                "weather": entry_in["c"],
+                "icon": entry_in["iu"],
+                "humidity": float(entry_in["h"].replace("%", "")),
+                "precip_prob": float(entry_in["p"].replace("%", ""))
+            }
+            temp_key = "tm"
+            entry_out["temp"] = int((float(entry_in[temp_key]) * 1.8) + 32)
+            entry_out["unit"] = output_units["temp"]
+            speed_key = "ws"
+            entry_out["wind_speed"] = float(
+                entry_in[speed_key].replace("km/h", "").replace("mph", ""))
             icon_element = base.find('img', {'class': 'wob_tci'})
             if icon_element is not None:
                 icon_url = icon_element['src']
-                entry_out["icon_url"] = icon_url
-
+            entry_out["icon_url"] = icon_url
             data_out.append(entry_out)
 
         return Response({"weather": data_out})
