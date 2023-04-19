@@ -73,26 +73,33 @@ class TaskCountView(generics.GenericAPIView):
         target_date = kwargs.get('date')
         target_date = target_date[0:11]
 
-        end_date = timezone.now().date()
-        start_date = end_date - timezone.timedelta(days=30)
+        todayDate=timezone.now().date()
+        end_date = todayDate-timezone.timedelta(days=1)
+        start_date = todayDate - timezone.timedelta(days=7)
 
-        queryset = Todo.objects.filter(
-            user=user, start_time__range=(start_date, end_date))
-        queryset = queryset.annotate(day=TruncDate('start_time'))
-        queryset = queryset.values('day').annotate(total=Count('id'), completed=Count(
-            Case(When(completed=True, then=1), output_field=IntegerField()))).order_by('-day')
+        queryset = Todo.objects.filter(user=user, added_date__range=(start_date, end_date))
+        queryset = queryset.annotate(day=TruncDate('added_date'))
+        queryset = queryset.values('day').annotate(total=Count('id'), completed=Count(Case(When(completed=True, then=1), output_field=IntegerField()))).order_by('-day')
 
-        for todo in queryset:
-            print(todo)
+        date_list = [start_date + timezone.timedelta(days=x) for x in range((end_date - start_date).days + 1)]
 
-        task_count = Todo.objects.filter(
-            user=user, added_date__date=target_date, started=False).count()
-        completed_count = Todo.objects.filter(
-            user=user, added_date__date=target_date, completed=True).count()
-        started_count = Todo.objects.filter(
-            user=user, added_date__date=target_date, completed=False, started=True).count()
+        lastSeven = []
+        for date in date_list:
+            task_count = {'date': date}
+            tasks = queryset.filter(day=date)
+            if tasks:
+                task_count['total'] = tasks[0]['total']
+                task_count['completed'] = tasks[0]['completed']
+            else:
+                task_count['total'] = 0
+                task_count['completed'] = 0
+            lastSeven.append(task_count)
 
-        return Response({'task_count': task_count, 'completed_count': completed_count, "started_count": started_count, "month_count": queryset})
+        task_count = Todo.objects.filter(user=user, added_date__date=target_date, started=False).count()
+        completed_count = Todo.objects.filter(user=user, added_date__date=target_date, completed=True).count()
+        started_count = Todo.objects.filter(user=user, added_date__date=target_date, completed=False, started=True).count()
+
+        return Response({'task_count': task_count, 'completed_count': completed_count, "started_count": started_count, "month_count": lastSeven})
 
 
 class TodoTimeline(generics.GenericAPIView):

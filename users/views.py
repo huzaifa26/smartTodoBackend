@@ -8,7 +8,7 @@ from .serializers import UserSerializer
 from .serializers import LoginSerializer
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-
+from .serializers import ChangePasswordSerializer
 
 
 class signup(generics.CreateAPIView):
@@ -77,3 +77,16 @@ class UpdateUserView(generics.UpdateAPIView):
             return Response({'error': 'User does not exist'})
         except Exception as e:
             return Response({'error': str(e)})
+        
+class ChangePasswordView(generics.UpdateAPIView):
+    serializer_class = ChangePasswordSerializer
+
+    def put(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        print(request.user)
+        User = get_user_model()
+        user = User.objects.get(id=request.data['id'])
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        return Response({'detail': 'Password updated successfully.'})

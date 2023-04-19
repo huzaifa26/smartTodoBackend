@@ -31,3 +31,15 @@ class LoginSerializer(serializers.Serializer):
         attrs['user'] = user
         data={"id":user.id,"username":user.username,"email":user.email,'first_name':user.first_name,'last_name':user.last_name,}
         return attrs,data
+    
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        User = get_user_model()
+        user = User.objects.get(id=self.context['request'].data['id'])
+        print(not user.check_password(data['old_password']))
+        if not user.check_password(data['old_password']):
+            raise serializers.ValidationError({'error': 'Wrong password.'})
+        return data
